@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:ppbl/sqlite/connection.dart';
 import 'package:ppbl/sqlite/saham.dart';
 
+import 'form_edit.dart';
+
 Future<List<Saham>> fetchSaham() async {
   final db = await openMyDatabase();
 
@@ -41,25 +43,67 @@ class _ReadDataState extends State<ReadData> {
             }
 
             return ListView.builder(
+              padding: EdgeInsets.symmetric(horizontal: 16),
               itemCount: futureSaham.length,
               itemBuilder: (context, index) {
                 final saham = futureSaham[index];
-                return ListTile(
-                  title: Text(saham.ticker),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Open : ${saham.open}"),
-                      Text("High : ${saham.high}"),
-                      Text("Last : ${saham.last}"),
-                      Text(
-                        "Change : ${saham.change}%",
-                        style: TextStyle(
-                          color: (saham.change) < 0 ? Colors.red : Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
+                return Dismissible(
+                  key: UniqueKey(),
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: EdgeInsets.only(right: 20),
+                    child: Icon(Icons.delete, color: Colors.white),
+                  ),
+                  direction: DismissDirection.endToStart,
+                  onDismissed: (direction) async {
+                    final db = await openMyDatabase();
+                    await db.delete(
+                      'saham',
+                      where: 'tickerid = ?',
+                      whereArgs: [saham.tickerid],
+                    );
+
+                    setState(() {});
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("${saham.ticker} berhasil dihapus"),
                       ),
-                    ],
+                    );
+                  },
+                  child: Card(
+                    child: ListTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FormEdit(saham: saham),
+                          ),
+                        ).then((value) {
+                          setState(() {});
+                        });
+                      },
+                      title: Text(saham.ticker),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Open : ${saham.open}"),
+                          Text("High : ${saham.high}"),
+                          Text("Last : ${saham.last}"),
+                          Text(
+                            "Change : ${saham.change}%",
+                            style: TextStyle(
+                              color:
+                                  (saham.change) < 0
+                                      ? Colors.red
+                                      : Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
